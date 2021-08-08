@@ -1,0 +1,9 @@
+var clientContext = WCFContextFactory.GetApplicationContext();
+DbContext.Database.Log = sql => Debug.Write(sql);
+var query = (from p in DbContext.Provider
+                 where (p.TIN == provider.TIN || (string.IsNullOrEmpty(p.TIN) && string.IsNullOrEmpty(provider.TIN)))
+                      && (p.NPI == provider.NPI || (string.IsNullOrEmpty(p.NPI) && string.IsNullOrEmpty(provider.NPI)))
+                  && (p.MCare == provider.MCare || (string.IsNullOrEmpty(p.MCare) && string.IsNullOrEmpty(provider.MCare)))
+              && (p.FirstName == provider.FirstName || (string.IsNullOrEmpty(p.FirstName) && string.IsNullOrEmpty(provider.FirstName)))
+             && (p.LastNameFacility == provider.LastNameFacility || (string.IsNullOrEmpty(p.LastNameFacility) && string.IsNullOrEmpty(provider.LastNameFacility)))
+            select p).ToList();

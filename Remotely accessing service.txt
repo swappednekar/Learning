@@ -1,0 +1,6 @@
+Net use \\computername password /User:username
+Net use \\cl1-vmregweb-01 abcfxxxx /User:swapnil.pednekar
+
+SC \\cl1-vmts1web-02 start MRA.rsMRAXRealtime.webapi
+
+SC \\cl1-vmts1web-02 stop MRA.rsMRAXRealtime.webapi
