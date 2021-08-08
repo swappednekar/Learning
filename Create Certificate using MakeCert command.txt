@@ -1,0 +1,57 @@
+I have a scenario where I want to create one web api and deploy it on Secure Https layer. Also I want to authenticate my clients by client certificate so that only authorised users can access my web api.
+
+To cater above requirement, I need to create certificates so I decided to go for self signed certificates. 
+
+You can use MakeCert.exe utility to generate certificate. It can be found in C:\Program Files (x86)\Windows Kits\8.0\bin\x64\
+
+There are three certificate which needs to be created. Those are Root certificate, server certificate and client certificate.
+
+--- Root Entry
+
+makecert.exe -r -n "CN=MPN Root Authority,O=MPN,OU=Development,L=IR,S=TX,C=US" -pe -ss Root -sr LocalMachine -sky signature -m 120 -a sha256 -len 2048 -sv MPNSwapnilRoot.pvk -cy authority MPNSwapnilRoot.cer
+
+Type password for private key. Above command will create MPNSwapnilRoot.pvk and MPNSwapnilRoot.cer. MPNSwapnilRoot.cer is certificate file and MPNSwapnilRoot.pvk is private key file.
+
+pvk2pfx.exe -pvk MPNSwapnilRoot.pvk -spc MPNSwapnilRoot.cer -pfx MPNSwapnilRoot.pfx
+
+Above command will bundle private key and certificate file into .pfx.
+
+--- Server Certificate
+
+makecert.exe -ic MPNSwapnilRoot.cer -iv MPNSwapnilRoot.pvk -pe -sv MPNSwapnilServer.pvk -a sha1 -n “CN=mpnssltest.com” -len 2048 -sky exchange MPNSwapnilServer.cer -eku 1.3.6.1.5.5.7.3.1
+
+CN name should contain the hostname of the server. This is url which you would be using it. Make sure eku value is 1.3.6.1.5.5.7.3.1 which is for creating server certificate.
+
+pvk2pfx.exe -pvk MPNSwapnilServer.pvk -spc MPNSwapnilServer.cer -pfx MPNSwapnilServer.pfx
+
+
+Install above both certificate using MMC (Local Computer) in Trusted Root Certification Authorities => Certificates. Install .cer file.
+Also add entry for mpnssltest.com in your host file so that server certificate can be trusted.
+
+--- Client Certificate
+
+makecert.exe -ic MPNSwapnilRoot.cer -iv MPNSwapnilRoot.pvk -pe -sv MPNSwapnilClient.pvk -a sha1 -n “CN=CL1-VMDT261WX” -len 2048 -in "MPN Root Authority" -sky exchange MPNSwapnilClient.cer -eku 1.3.6.1.5.5.7.3.2
+
+CN name can be the name of computer where you want to install client certificate.
+
+pvk2pfx.exe -pvk MPNSwapnilClient.pvk -spc MPNSwapnilClient.cer -pfx MPNSwapnilClient.pfx
+
+Install client certificate using MMC (Current User) in Personal => Certificates. Install .pfx file.
+
+
+
+--------------------------------------------------------------
+Install both Root and Server certificate in IIS Server Certificate. Add pfx file.
+
+Delete all untrusted, non self signed certificate from Root Authority. Use below powershell command to find those.
+
+Get-Childitem cert:\LocalMachine\root -Recurse |
+Where-Object {$_.Issuer -ne $_.Subject} | Format-List * | Out-File "c:\certificate\computer_filtered.txt"
+
+delete those certificate using below
+
+Get-ChildItem Cert:\LocalMachine\root\9C017A2A772CDD5B0352CE2C5E8E0C2E511319DA | Remove-Item
+
+------------------------------------------------------------------------
+
+Make sure that you add MPNSwapnilClient.pfx in code and not MPNSwapnilClient.cer so that it will be trusted properly by client.
